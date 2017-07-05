@@ -3,5 +3,5 @@ from django.conf.urls import include
 from django.contrib import admin
 
 urlpatterns = [
-    url(r'^mlptkeps/?', include('mlptkeps.urls'))
+    url(r'^(?:webapps/)?mlptkeps/?', include('mlptkeps.urls'))
 ]
