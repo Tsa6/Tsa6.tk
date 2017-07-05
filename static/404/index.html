@@ -1,0 +1,30 @@
+
+<!doctype HTML>
+<html>
+    <head>
+        <title>404 - Page Not Found</title>
+    </head>
+    <body>
+        <div id="404s" style="overflow:hidden;position:absolute;top:0;left:0;height:100%;width:100%"></div>
+        <!--<div id="returnButton" style="position:absolute;top:33%;left:33%;width:34%;height:34%;background-color:grey;opacity:0.3;display:table;text-align:center;border-radius:20px;"><a style="color:black;font-size:50px;display:table-cell;vertical-align:middle" href="/secret/mainpage">Main Page</a></div>-->
+        <script>
+            error404s = document.getElementById("404s");
+            var rootHue = Math.random() * 360;
+            function func404(){
+                var fontSize = Math.round(Math.random()*90-0.5)+10;
+                var newElement = document.createElement("p");
+                newElement.className = "404";
+                newElement.innerHTML = "404";
+                newElement.style.fontFamily = "Arial";
+                newElement.style.position= "absolute";
+                newElement.style.fontSize = fontSize + "px";
+                newElement.style.color = "hsl(" + (rootHue + Math.random() * 60 - 30) + ",100%,50%)";
+                error404s.appendChild(newElement);
+                newElement.style.bottom = Math.random()*(window.innerHeight) - newElement.offsetHeight * 1.33 + "px";
+                newElement.style.left   = Math.random()*(window.innerWidth ) - newElement.offsetWidth  / 2 + "px";
+            }
+            func404();
+            setInterval(func404,500);
+        </script>
+    </body>
+</html>

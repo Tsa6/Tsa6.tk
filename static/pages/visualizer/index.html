@@ -1,0 +1,568 @@
+<!Doctype HTML>
+<!--
+Copyright (c) 2017 Taizo 'Tsa6' Simpson
+All rights reserved.
+Direct inqueries to tsa6games@gmail.com
+-->
+<html>
+    <head>
+        <style>
+            body {
+                overflow: hidden;
+            }
+            
+            canvas {
+                position: absolute;
+                left: 0;
+                top: 0;
+            }
+        </style>
+    </head>
+    <body>
+        <!--Comment this out when testing using WPE, leave it in for browser testing-->
+        <script src="https://rawgit.com/ClassicOldSong/WPE-Audio-Simulator/master/dist/wpesmu.min.js"></script>
+        <script src="p5.min.js"></script>
+        <script>  
+            //Register property listener
+            //This needs to be at the top otherwise we miss the initial properties.
+            window.wallpaperPropertyListener = {
+                applyUserProperties: applyProperties
+            }
+            var isSetup = false;
+            var onSetupProps = null;
+            
+            //Change these from the developer console to simulate changing options
+            var MOUNTAIN_COUNT;
+            var MOUNTAIN_RESOLUTION_MODIFIER;
+            var MOUNTAIN_RESOLUTION_MAX;
+            var MOUNTAIN_RESOLUTION_MIN;
+            var MOUNTAIN_SLOPE_MAX;
+            var MOUNTAIN_SLOPE_MIN;
+            var MOUNTAIN_SLOPE_RANDOMNESS;
+            var TIME_SCALE;
+            var TIME_REAL;
+            var TIME_LOCK;
+            var TIME_LOCK_POS;
+            var RAIN_DURATION;
+            var RAIN_FREQ;
+            var RAIN_AMT;
+            var SKY_RESOLUTION;
+            var AUDIO_SMOOTH;
+            var AUDIO_BAR_COUNT;
+            var AUDIO_BAR_BRIGHTNESS;
+            var AUDIO_BAR_COLOR;
+            var AUDIO_BAR_TOP;
+            var AUDIO_BAR_BOTTOM;
+            var AUDIO_BAR_DYNAMIC;
+            
+            var topNight;
+            var topSun;
+            var topDay;
+            var bottomNight;
+            var bottomSun;
+            var bottomDay;
+
+            var terrain;
+            var raindrops;
+            var sunY;
+            var terrainTop;
+            var terrainBottom;
+            var sunR1;
+            var sunMaxA;
+            var audioData;
+            var audioVolume;
+            
+            //Debug Timers
+            var timeBackground = 0;
+            var timeAudio = 0;
+            var timeTerrain = 0;
+            var timeTerrainColor = 0;
+            var timeTerrainShape = 0;
+            var timeWeather = 0;
+            
+            var DEBUG = [];
+            var DEBUG_AVG_FACTOR = .001;
+            //Entering strings into the DEBUG array to enable various debug modes
+            //Debug modes:
+            //   timing
+            //   colors
+            
+            function setup() {
+                createCanvas(windowWidth, windowHeight)
+                
+                MOUNTAIN_COUNT = 10;
+                MOUNTAIN_RESOLUTION_MODIFIER = 1;
+                MOUNTAIN_RESOLUTION_MAX = 80;
+                MOUNTAIN_RESOLUTION_MIN = 10;
+                MOUNTAIN_SLOPE_MAX = .7;
+                MOUNTAIN_SLOPE_MIN = .1;
+                MOUNTAIN_SLOPE_RANDOMNESS = .15;
+                TIME_SCALE = 1; //In percent per second
+                TIME_REAL = false; //Enable realtime
+                TIME_LOCK = false;
+                TIME_LOCK_POS = 0;//0 - 0.5
+                RAIN_DURATION = 120;//In seconds
+                RAIN_FREQ = .2; //Fraction of time that it is raining.
+                RAIN_SPEED = 40; //Speed of falling rain
+                RAIN_SIZE = 50; //Length of single raindrop
+                RAIN_AMT=.1; //Chance per 100 pixels per frame of spawning
+                RAIN_DARKNESS=.6
+                SKY_RESOLUTION=4; //Lower numbers = Higher Resolution (1 - 100)
+                AUDIO_VOLUME_SMOOTH=.99;//Larger numbers have a greater smooth (0 - 1)
+                AUDIO_SMOOTH=.4;//Larger numbers have a greater smooth (0 - 1)
+                AUDIO_BAR_COUNT = 33; //Between 2 and 128
+                AUDIO_BAR_BRIGHTNESS = 20; //Between 0 and 100
+                AUDIO_BAR_COLOR = "red";
+                AUDIO_BAR_TOP = .875;
+                AUDIO_BAR_BOTTOM = .4;
+                AUDIO_BAR_DYNAMIC = true;
+                
+                topNight = color('#000341');
+                topSun = color('#8c0291');
+                topDay = color('#92c1e3');
+                bottomNight = color('#360023');
+                bottomSun = color('#ffaa37');
+                bottomDay = color('#f4faff');
+                
+                //Register audio listener
+                window.wallpaperRegisterAudioListener(function(data){
+                    
+                    //Remove NaN values
+                    data = data.map(function(d){return d?d:0});
+                    
+                    //Average left and right channels
+                    var dataNew = [];
+                    var newDataLength = data.length/2;
+                    for(var i = 0; i < newDataLength; i++) {
+                        dataNew[i] = (data[i] + data[newDataLength + i])/2
+                    }
+                    data = dataNew;
+                    
+                    //Adjust volume
+                    audioVolume = audioVolume * AUDIO_SMOOTH + max(data) * (1 - AUDIO_SMOOTH);
+                    data = data.map(function(d){return audioVolume?d/audioVolume:d})
+                    
+                    //Reduce to appropriate number of bars
+                    var reducedData = [];
+                    for(var i = 0; i < AUDIO_BAR_COUNT;i++) {
+                        reducedData[i] = [];
+                    }
+                    for(var i = 0; i < data.length; i++) {
+                        reducedData[floor(i*AUDIO_BAR_COUNT/data.length)].push(data[i]) 
+                    }
+                    reducedData = reducedData.map(function(arr){
+                        return arr.reduce(function(a, b){return a + b},0)/arr.length;
+                    })
+                    
+                    //Average w/ previous data
+                    if(audioData && audioData.length == AUDIO_BAR_COUNT) {
+                        for(var i = 0; i < AUDIO_BAR_COUNT; i++) {
+                            audioData[i] = audioData[i] * AUDIO_SMOOTH + reducedData[i] * (1 - AUDIO_SMOOTH);
+                        }
+                    }else{
+                        audioData = reducedData;
+                    }
+                })
+                
+                isSetup = true;
+                if(onSetupProps) {
+                    applyProperties(onSetupProps);
+                }else{
+                    resetup();
+                }
+            }
+            
+            function resetup() {
+
+                terrain = [];
+                rain = [];
+                audioVolume = 0;
+                sunY = height/2;
+                sunR1 = 2*width/height;
+                
+                //Determine sunMaxA
+                var corners = [];
+                for(var x = 0; x <= width; x += width) {
+                    for(var y = 0; y <= height; y+= height) {
+                        corners.push(calcSkyA(x,y));
+                    }
+                }
+                sunMaxA = max(corners);
+                
+                //Mountain Generation
+                for(var i = 0; i < MOUNTAIN_COUNT; i++) {
+                    //Decide properties based on location (back to front)
+                    mountain = {
+                        x: -1,
+                        y: height*(.5-pow(.5, MOUNTAIN_COUNT - i + 1)),
+                        slope: map(
+                            (1-pow(.5,.5*(MOUNTAIN_COUNT-i-1)))/(1-pow(.5,.5*(MOUNTAIN_COUNT-1))),
+                        0,1,MOUNTAIN_SLOPE_MIN,MOUNTAIN_SLOPE_MAX),
+                        randomnessFactor: randomGaussian(.9*pow(.99,MOUNTAIN_COUNT-1-i),MOUNTAIN_SLOPE_RANDOMNESS),
+                        resolution: map(
+                            (pow(.5, 1.5*(MOUNTAIN_COUNT-i-1)))/(1-pow(.5,1.5*MOUNTAIN_COUNT-1.5)),
+                        0,1,MOUNTAIN_RESOLUTION_MIN,MOUNTAIN_RESOLUTION_MAX)
+                    };
+                    
+                    mountain.x = random(6*width/7);
+                    if(mountain.x > 3*width/7) {
+                        mountain.x += width/7;
+                    }
+                    
+                    //Bake vector
+                    var points = [[0, height]];
+                    for(var x = 0; x <= width + mountain.resolution * 2; x += randomGaussian(mountain.resolution/MOUNTAIN_RESOLUTION_MODIFIER, mountain.resolution/4)) {
+                        var point = [x, height - randomGaussian(mountain.y - mountain.slope * abs(mountain.x - x),mountain.resolution * mountain.slope * mountain.randomnessFactor)];
+                        if(point[1] < height) //Don't include points that are out of frame
+                            points.push(point);
+                    }
+                    points.push([width, height]);
+                    
+                    terrain.push({
+                        points: points,
+                        colorPoint: [mountain.x, mountain.y - 200],
+                        colorFunction: function(preTransColor){
+                            return color(hue(preTransColor), saturation(preTransColor), lightness(preTransColor)-.1)
+                        }
+                    });
+                }
+                
+                //Go through the mountains and remove points that are being obscured by other mountains
+                for(var i = 0; i < terrain.length - 1; i++) { //Go through mountains
+                    var invalidPoints = []; //Start a list of invalid points in this mountain
+                    for(var k = 0; k < terrain[i].points.length; k++) { //For each point in the mountain
+                        invalidPoints[k] = false;
+                        for(var j = i + 1; j < terrain.length; j++) { //Go through mountains in front of this mountain
+                            var subjectPoint = terrain[i].points[k];
+                            for(var l = 0; l < terrain[j].points.length - 1; l++) { //Find the points that might be covering it
+                                var testingPointA = terrain[j].points[l];
+                                var testingPointB = terrain[j].points[l + 1];
+                                if(checkPoint(subjectPoint, testingPointA, testingPointB)) {
+                                    invalidPoints[k] = true;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    
+                    //Points that have invalid points before and after them should be removed.
+                    for(var j = 1; j < invalidPoints.length - 1; j++) {
+                        if(invalidPoints[j - 1] && invalidPoints[j] && invalidPoints[j + 1]) {
+                            terrain[i].points.splice(j, 1)
+                            invalidPoints.splice(j--, 1)
+                        }
+                    }
+                    
+                    //Make sure the points that complete the mountain are always directly beneath the first and last points,
+                    terrain[i].points[0][0] = terrain[i].points[1][0];
+                    terrain[i].points[terrain[i].points.length - 1][0] = terrain[i].points[terrain[i].points.length - 2][0]
+                }
+            }
+            
+            function draw() {
+                
+                var date = new Date();
+                var nowEpoch = date.getTime();
+                var currentTime = TIME_LOCK?TIME_LOCK_POS:(TIME_REAL?(date.getHours() * 60 + date.getMinutes())/3600:(nowEpoch/100000*TIME_SCALE)%1);
+                
+                //Draw Background
+                var startTime = new Date().getTime();
+                for(var a = sunMaxA; a > 0; a-=SKY_RESOLUTION) {
+                    noStroke();
+                    fill(getColorRad(currentTime,a));
+                    ellipse(width/2,sunY,2*a*sunR1,2*a)
+                }
+                var now = new Date().getTime();
+                timeBackground = timeBackground * (1 - DEBUG_AVG_FACTOR) + (now - startTime) * DEBUG_AVG_FACTOR;
+                
+                //Draw Audio Visualization
+                startTime = new Date().getTime();
+                if(audioData && audioVolume > 1e-50) {
+                    if(!AUDIO_BAR_DYNAMIC) {
+                        fill(color(AUDIO_BAR_COLOR));
+                    }
+                    noStroke();
+                    var spacing = width / (audioData.length + 1);
+                    for(var i = 0; i < audioData.length; i++) {
+                        if(AUDIO_BAR_DYNAMIC) {
+                            var baseColor = getColorRad(currentTime, calcSkyA(spacing * (i - 1), height/2));
+                            fill(
+                                "hsl(" + round(hue(baseColor)) +", " + round(saturation(baseColor)) + "%, " + max(round(lightness(baseColor)) + AUDIO_BAR_BRIGHTNESS, 0) + "%)"
+                            )
+                        }
+                        rect(
+                            spacing * (i + 1) - (spacing - 10)/2,
+                            map(
+                                audioData[i],
+                                0,
+                                1,
+                                (1 - AUDIO_BAR_BOTTOM)*height,
+                                (1 - AUDIO_BAR_TOP) * height
+                            ),
+                            spacing*.8,
+                            height
+                        );
+                    }
+                }
+                now = new Date().getTime();
+                timeAudio = timeAudio * (1 - DEBUG_AVG_FACTOR) + (now - startTime) * DEBUG_AVG_FACTOR;
+                
+                //Drawing Terrain
+                startTime = new Date().getTime();
+                timeTerrainColor *= (1 - DEBUG_AVG_FACTOR)
+                timeTerrainShape *= (1 - DEBUG_AVG_FACTOR)
+                for(var n = 0; n < terrain.length; n++) {
+                    
+                    //Select Color
+                    var startTimeB = new Date().getTime();
+                    var colorPoint = terrain[n].colorPoint;
+                    noStroke();
+                    var preTransColor = getColorRad(currentTime,calcSkyA(colorPoint[0],colorPoint[1]));
+                    colorMode(HSB)
+                    fill(terrain[n].colorFunction(preTransColor));
+                    now = new Date().getTime();
+                    timeTerrainColor += (now - startTimeB) * DEBUG_AVG_FACTOR;
+                    var startTimeB = now;
+                    
+                    //Debug colors
+                    if(DEBUG.includes("colors")) {
+                        stroke(color(360/terrain.length*n, 100, 100))
+                        strokeWeight(5)
+                        noFill()
+                    }
+                    
+                    //Draw Shape
+                    var points = terrain[n].points;
+                    beginShape();
+                    for(var x = 0; x < points.length; x++) {
+                        vertex(points[x][0],points[x][1]);
+                    }
+                    endShape(CLOSE);
+                    now = new Date().getTime();
+                    timeTerrainShape += (now - startTimeB) * DEBUG_AVG_FACTOR;
+                }
+                now = new Date().getTime();
+                timeTerrain = timeTerrain * (1 - DEBUG_AVG_FACTOR) + (now - startTime) * DEBUG_AVG_FACTOR;
+                
+                //Draw Weather
+                //Calculating Alpha (strength of storm, 0 to 1)
+                startTime = new Date().getTime();
+                colorMode(RGB,255,255,255,1);
+                var rainTick = nowEpoch/RAIN_DURATION/1000*RAIN_FREQ%1;
+                var rainingFor = nowEpoch%(RAIN_DURATION*1000/RAIN_FREQ);
+                var alpha;
+                if(rainTick < RAIN_FREQ) {
+                    //1/10 of rain period spend building
+                    alpha = min(rainingFor/(RAIN_DURATION*1000/10),1);
+                }else {
+                    alpha = max(1 - (rainingFor/1000 - RAIN_DURATION)/(RAIN_DURATION/10), 0);
+                }
+                if(RAIN_FREQ === 1) {
+                    alpha = 1;
+                }
+                
+                //Spawn some rain
+                for(var i = 0; i < width/100; i++) {
+                    if(random() < alpha * RAIN_AMT) {
+                        rain.push([random(width),0]);
+                    }
+                }
+                
+                //Draw lighting
+                noStroke();
+                fill(color(0,0,30,alpha*RAIN_DARKNESS));
+                rect(0,0,width,height);
+                
+                //Draw some rain
+                stroke(255,255,255,.5)
+                strokeWeight(1);
+                for(var i = 0; i < rain.length; i++) {
+                    drop = rain[i];
+                    line(drop[0],drop[1],drop[0],drop[1]-RAIN_SIZE)
+                    newdrop = [drop[0], drop[1] + RAIN_SPEED];
+                    if(newdrop[1]-RAIN_SIZE < height) {
+                        rain[i] = newdrop;
+                    }else{
+                        rain.splice(i--,1)
+                    }
+                }
+                now = new Date().getTime();
+                timeWeather = timeWeather * (1 - DEBUG_AVG_FACTOR) + (now - startTime) * DEBUG_AVG_FACTOR;
+                
+                //Draw Debug
+                if(DEBUG.length) {
+                    var message = "";
+                    var y = 10;
+                    if(DEBUG.includes("timing")) {
+                        message +=
+                            "---Timing---\n" + 
+                            "Background: " + round(100 * timeBackground) / 100 + "ms\n" +
+                            "Audio: " + round(100 * timeAudio) / 100 + "ms\n" +
+                            "Terrain: " + round(100 * timeTerrain) / 100 + "ms\n" +
+                            "   Color: " + round(100 * timeTerrainColor) / 100 + "ms\n" +
+                            "   Shape: " + round(100 * timeTerrainShape) / 100 + "ms\n" +
+                            "Weather: " + round(100 * timeWeather) / 100 + "ms\n\n";
+                        y += 8 * 11.5;
+                    }
+                    fill(0);
+                    noStroke();
+                    rect(0,40,300,y+5);
+                    fill(255);
+                    text(message,5,53)
+                }
+            }
+            
+            function calcA(x, y, h, k, r1, r2) {
+                return sqrt(pow(x-h, 2)/pow(r1,2)+pow(y-k, 2)/pow(r2,2));
+            }
+            
+            function calcSkyA(x,y) {
+                return calcA(x, y, width/2, sunY, sunR1, 1);
+            }
+            
+            function getColorRad(time,a) {
+                return getColorLin(time,a/sunMaxA);
+            }
+            
+            function getColorLin(time, ypercent) {
+                var time = 2 - abs(4*time - 2)
+                colorMode(RGB,255)
+                var top;
+                var bottom;
+                if(time < 1) {
+                    top = lerpColor(topNight, topSun, time);
+                    bottom = lerpColor(bottomNight, bottomSun, time);
+                }else {
+                    top = lerpColor(topSun, topDay, time - 1);
+                    bottom = lerpColor(bottomSun, bottomDay, time - 1);
+                }
+                return lerpColor(top,bottom,1-ypercent);
+            }
+            
+            function windowResized() {
+                resizeCanvas(windowWidth, windowHeight);
+                setup();
+            }
+            
+            function checkPoint(a, b, c) { //Checks if point a is beneath b and c.  True means point is beneath
+                if(b[0] <= a[0] && c[0] >= a[0]) { //Subject point inbetween testing points
+                    var testingSlope = (c[1] - b[1])/(c[0] - b[0]);
+                    var testingYInt = b[1] - testingSlope * b[0];
+                    if(a[1] > testingSlope * a[0] + testingYInt) { //If point below testing line
+                        return true;
+                    }
+                }
+                return false;
+            }
+            
+            function applyProperties(props) {
+                console.log(JSON.stringify(props));
+                
+                if(isSetup) {
+                    var rerunSetup = false;
+
+                    if(props.audioBarCount) {
+                        AUDIO_BAR_COUNT = props.audioBarCount.value;
+                    }
+
+                    if(props.audioBarDynamic) {
+                        AUDIO_BAR_DYNAMIC = props.audioBarDynamic.value;
+                    }
+
+                    if(props.audioBarBrightness) {
+                        AUDIO_BAR_BRIGHTNESS = props.audioBarBrightness.value;
+                    }
+
+                    if(props.audioBarColor) {
+                        AUDIO_BAR_COLOR = "rgb(" + props.audioBarColor.value.split(" ").map(function(a){return a * 255}) + ")";
+                    }
+
+                    if(props.audioBarTop) {
+                        AUDIO_BAR_TOP = props.audioBarTop.value / 100;
+                    }
+
+                    if(props.audioBarBottom) {
+                        AUDIO_BAR_BOTTOM = props.audioBarBottom.value / 100;
+                    }
+
+                    if(props.audioSmooth) {
+                        AUDIO_SMOOTH = props.audioSmooth.value / 100;
+                    }
+
+                    if(props.rainFreq) {
+                        RAIN_FREQ = props.rainFreq.value/100;
+                    }
+
+                    if(props.rainDuration) {
+                        RAIN_DURATION = props.rainDuration.value;
+                    }
+
+                    if(props.rainAmt) {
+                        RAIN_AMT = props.rainAmt.value/100;
+                    }
+
+                    if(props.realtime) {
+                        TIME_REAL = props.realtime.value;
+                    }
+
+                    if(props.timeScale) {
+                        TIME_SCALE = props.timeScale.value/100;
+                    }
+
+                    if(props.mountainResolution) {
+                        MOUNTAIN_RESOLUTION_MODIFIER = props.mountainResolution.value / 100;
+                        rerunSetup = true;
+                    }
+
+                    if(props.mountainCount) {
+                        MOUNTAIN_COUNT = props.mountainCount.value;
+                        rerunSetup = true;
+                    }
+
+                    if(props.skyResolution) {
+                        SKY_RESOLUTION = 100/props.skyResolution.value;
+                    }
+
+                    if(props.topNight) {
+                        topNight = color("rgb(" + props.topNight.value.split(" ").map(function(a){return a * 255}) + ")");
+                    }
+
+                    if(props.bottomNight) {
+                        bottomNight = color("rgb(" + props.bottomNight.value.split(" ").map(function(a){return a * 255}) + ")");
+                    }
+
+                    if(props.topSun) {
+                        topSun = color("rgb(" + props.topSun.value.split(" ").map(function(a){return a * 255}) + ")");
+                    }
+
+                    if(props.bottomSun) {
+                        bottomSun = color("rgb(" + props.bottomSun.value.split(" ").map(function(a){return a * 255}) + ")");
+                    }
+
+                    if(props.topDay) {
+                        topDay = color("rgb(" + props.topDay.value.split(" ").map(function(a){return a * 255}) + ")");
+                    }
+
+                    if(props.bottomDay) {
+                        bottomDay = color("rgb(" + props.bottomDay.value.split(" ").map(function(a){return a * 255}) + ")");
+                    }
+
+                    if(props.timeLock) {
+                        TIME_LOCK = props.timeLock.value;
+                    }
+
+                    if(props.timeLockPos) {
+                        TIME_LOCK_POS = map(props.timeLockPos.value, 0, 100, 0, 0.5);
+                    }
+
+                    //Recall setup, if necessary
+                    if(rerunSetup) {
+                        resetup();
+                    }
+                }else{
+                    onSetupProps = props;
+                }
+            }
+        </script>
+    </body>
+</html>

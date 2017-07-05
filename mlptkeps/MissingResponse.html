@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Missing Episode!</title>
+        <style>
+            @font-face {
+                font-family: CelestiaMediumRedux;
+                src: url('/resources/fonts/CelestiaMediumRedux.ttf');
+            }
+
+            body {
+                background-color: #98b05d;
+                font-family: CelestiaMediumRedux;
+                color:white;
+                padding: 20px;
+                font-size: 13pt
+            }
+
+            h1 {
+                text-align: center;
+                font-size: 40px;
+            }
+
+            div.button {
+                background-color: #808080;
+                width: 30%;
+                margin: 5%;
+                height: 50px;
+                padding: 0;
+                display: inline-block;
+                font-size: 15pt;
+                box-shadow: -5px 5px #707070;
+            }
+
+            div#buttonContainer {
+                display: inline-block;
+                width: 100%;
+                text-align: center;
+            }
+
+            div.text-aligned-table {
+                display: table;
+                height: 100%;
+                width: 100%;
+            }
+
+            a {
+                color: white;
+                text-decoration: none;
+                font-size: 14pt;
+            }
+
+            a.v-aligned-text {
+                color: white;
+                display: table-cell;
+                vertical-align: middle;
+            }
+        </style>
+    </head>
+    <body>
+        <h1>Episode Missing!</h1>
+        <p>Unfortunately, it looks like the episode that you are trying to watch is currently unavailable due to copyright takedowns.  Luckily, you can still watch this episode, but you'll have to download it from another source, such as YayPonies.  Here's some links to start your search:</p>
+
+        <div id="buttonContainer">
+            <div class="button" style="margin-left:10%">
+                <div class="text-aligned-table">
+                    <a class="v-aligned-text" target="_blank" href="data:text/html;base64,RXJyb3IhICBQbGVhc2UgY29udGFjdCB0c2E2Z2FtZXNAZ21haWwuY29tIHNvIGhlIGNhbiBmaXggdGhpcy4=">CocoPommel Direct Download</a>
+                </div>
+            </div>
+            <div class="button" style="margin-right:10%">
+                <div class="text-aligned-table">
+                    <a class="v-aligned-text" target="_blank" href="https://yp1.yayponies.no/videos/episodes.php">YayPonies Episode Directory</a>
+                </div>
+            </div>
+        </div>
+
+        If you have found a working mirror hosted on DailyMotion, or are willing to host the video yourself, please contact <a href="mailto://tsa6games@gmail.com">Tsa6games@gmail.com</a> to have your video added.
+    </body>
+
+    <script>
+		//Sets CocoPommel Link
+		var epdata = window.location.href.split("?")[1].split("x");
+		document.getElementById("cocoLink").href = "https://yp.coco-pommel.org/ypvideo/YP-1R-<season>x<episode>.mkv".replace("<season>", ("0" + epdata[0]).slice(-2)).replace("<episode>", ("0" + epdata[1]).slice(-2));
+    </script>
+
+</html>

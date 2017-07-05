@@ -1,0 +1,39 @@
+# Formatting Instructions
+#
+# Lines starting with a hash character (#) and lines that are completely blank
+# are ignored, though hash characters can be used in positions other than the
+# first character.
+# Lines starting with an at sign (@) list a channel owner, whose channel will be
+# searched for episodes.  This should not be the channels display name, but the
+# unique internal name, present in the channels url.  There should be nothing
+# other than the at sign (@) and channel name on that line, though the two may
+# be separated by whitespace.
+# Each line starting with a plus sign (+) should be followed by a
+# regular expression.  This regular expression must have capture groups named s
+# (the season number, an integer), ep (the episode of that season), and may
+# optionally have a capture group named title, for the title of the episode.  If
+# a title is not provided, the title of the dailymotion video will be used
+# instead. For each video owned by the provided owners, each provided regular
+# expression under that channel is applied.  If a match is found, it is reported
+# as an available episode.
+# Lines starting with a minus sign (-) followed by a regular expression indicate
+# results that should be excluded, even if matched by a positive expresion.
+# Line order does not matter, though it is recomended to illustrate which regexs
+# are for which channel.
+
+@ maria-pattown
++ My Little Pony - Friendship Is Magic\s*(?P<s>\d) (?P<ep>\d{1,2}) - (?P<title>.+)
+
+@ MysteriousBrony
++ P0NIES \| S(?P<s>\d) E(?P<ep>\d{1,2})
++ P0NIES \| (?P<s>\d) \| Ep (?P<ep>\d{1,2})
+
+@ MLPFiMVideos
++ My Little Pony(:|-)? Friendship is Magic - Season (?P<s>\d),? Episode (?P<ep>\d{1,2}) - (?P<title>.*)
+
+@ nt11380
++ MLP FIM (?:—)?\s*S?eason (?P<s>\d) Epis?os?de (?P<ep>\d{1,2}) (?:-|–) (?P<title>.*)
+- part
+
+@ FoxtrotBrony
++ MLP: FiM - S(?P<s>\d{2})E(?P<ep>\d{2}) - (?P<title>.+?)\s*(?:\(1\. část\))?\s*\[CZ titulky\]
