@@ -54,7 +54,7 @@ class TableView(views.View):
         return soup
     
     def get(self, req):
-        if self.episode_server.refresh_rate and 'HTTP_IF_NONE_MATCH' in req.META and req.META['HTTP_IF_NONE_MATCH'] == gen_etag(self.episode_server.cache.hash):
+        if self.episode_server.refresh_rate and self.episode_server.cache and 'HTTP_IF_NONE_MATCH' in req.META and req.META['HTTP_IF_NONE_MATCH'] == gen_etag(self.episode_server.cache.hash):
             return HttpResponse(status=304)
         return addCacheHeaders(HttpResponse(self.get_soup().prettify()), self.episode_server.cache.hash)
 
@@ -64,7 +64,7 @@ class JsonView(views.View):
         self.episode_server = episode_server
         
     def get(self, req):
-        if self.episode_server.refresh_rate and 'HTTP_IF_NONE_MATCH' in req.META and req.META['HTTP_IF_NONE_MATCH'] == gen_etag(self.episode_server.cache.hash):
+        if self.episode_server.refresh_rate and self.episode_server.cache and 'HTTP_IF_NONE_MATCH' in req.META and req.META['HTTP_IF_NONE_MATCH'] == gen_etag(self.episode_server.cache.hash):
             return HttpResponse(status=304)
         resp = addCacheHeaders(HttpResponse(json.dumps(self.episode_server.get_data().as_json(), indent=4), content_type='text/json'), self.episode_server.cache.hash)
         resp['Access-Control-Allow-Origin'] = '*'
@@ -97,7 +97,7 @@ class EpisodesJsView(views.View):
         return output
         
     def get(self, req):
-        if self.episode_server.refresh_rate and 'HTTP_IF_NONE_MATCH' in req.META and req.META['HTTP_IF_NONE_MATCH'] == gen_etag(self.episode_server.cache.hash):
+        if self.episode_server.refresh_rate and self.episode_server.cache and 'HTTP_IF_NONE_MATCH' in req.META and req.META['HTTP_IF_NONE_MATCH'] == gen_etag(self.episode_server.cache.hash):
             return HttpResponse(status=304)
         resp = HttpResponse(re.sub(r'/\*\s*Dynamic Content\s*\*/', json.dumps(self.get_json(), indent=4), open('mlptkeps/EpisodesJsResponse.js').read(-1)), content_type='text/javascript')
         resp['Access-Control-Allow-Origin'] = '*'
