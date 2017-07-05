@@ -12,7 +12,7 @@
 // If you are intrested in the server-side source code, shoot me an email and I
 // can send it to you, though be warned -- it isn't exactly neat or well
 // documented.  You can also see an interactive chart at
-// http://tsa6.us.to/mlptkeps
+// https://tsa6.tk/mlptkeps
 //
 // If you host episodes on your own dailymotion channel or run a listing that
 // you would like included in the algorith, please contact me and I will add you
