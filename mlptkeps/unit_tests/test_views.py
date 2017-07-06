@@ -36,12 +36,12 @@ class TestViews(unittest.TestCase):
             ])) for i in range(0,2)
         ]])
     
-    def test_table_view_soup(self):
-        table_view = TableView(self.epserve)
-        with responses.RequestsMock() as rm:
-            rm.add(responses.GET, 'https://api.dailymotion.com/videos?fields=id&ids=epid0x0,epid0x1,epid0x2,epid0x3,epid1x0,epid1x1,epid1x2&limit=100&page=1',json=TestViews.js_response,match_querystring=True)
-            with open('mlptkeps/unit_tests/table_response_result.html','r') as target_result:
-                self.assertEqual(table_view.get_soup().prettify(),BeautifulSoup(target_result,'lxml').prettify())
+#    def test_table_view_soup(self):
+#        table_view = TableView(self.epserve)
+#        with responses.RequestsMock() as rm:
+#            rm.add(responses.GET, 'https://api.dailymotion.com/videos?fields=id&ids=epid0x0,epid0x1,epid0x2,epid0x3,epid1x0,epid1x1,epid1x2&limit=100&page=1',json=TestViews.js_response,match_querystring=True)
+#            with open('mlptkeps/unit_tests/table_response_result.html','r') as target_result:
+#                self.assertEqual(table_view.get_soup().prettify(),BeautifulSoup(target_result,'lxml').prettify())
     
     def test_epjs_view_json(self):
         self.maxDiff = None

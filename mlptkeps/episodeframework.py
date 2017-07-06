@@ -104,7 +104,8 @@ class EpisodeServer:
         self.cache = None
         self.cache_hash = None
         self.timer = None
-        self.reset_timer()
+        if caching_refresh_rate_minutes:
+            self.get_data()
         
     def reset_timer(self):
         assert self.refresh_rate == 0 or self.refresh_rate >= 1

@@ -230,13 +230,23 @@ class TestFramework(unittest.TestCase):
             timer.return_value.start.assert_called_once()
     
     def test_episode_server_rejects_delays_less_than_one(self):
-        es = EpisodeServer(MockProvider('MP', episode_layout=[(1,1)], episode_status=1))
+        es = EpisodeServer([])
         es.refresh_rate = .5
         self.assertRaises(AssertionError, es.reset_timer)
         es.refresh_rate = 1
         es.reset_timer()
         es.refresh_rate = 0
         es.reset_timer()
+    
+    def test_episode_server_updates_cache_when_started_with_timer(self):
+        es = EpisodeServer([MockProvider('MP', episode_layout=[(1,1)], episode_status=1)], caching_refresh_rate_minutes=1)
+        self.assertIsNotNone(es.cache)
+    
+    def test_episode_server_starts_timer_when_given_refresh_rate(self):
+        with mock.patch('threading.Timer') as timer:
+            EpisodeServer([], caching_refresh_rate_minutes=1)
+            timer.assert_called_once()
+            self.assertTrue(timer.return_value.daemon)
     
     def test_episode_server_hash(self):
         es = EpisodeServer(MockProvider('MP', episode_layout=[(1,1),(1,2),(1,3)], episode_status=1))
@@ -250,9 +260,9 @@ class MockProvider:
         self.calls = 0
         self.episode_status = episode_status
     
-    def get_batch():
+    def get_batch(self):
         self.calls += 1
-        return [Episode(t[0], t[1], '%s-%d'%(provider_id, str(self.calls)), title='s%dep%02d'%t, status=episode_status) for t in episode_layout]
+        return [Episode(t[0], t[1], '%s-%d'%(self.provider_id, self.calls), title='s%dep%02d'%t, status=self.episode_status) for t in self.episode_layout]
 
 if __name__ == '__main__':
     unittest.main()
