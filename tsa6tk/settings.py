@@ -52,7 +52,13 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = 'tsa6tk.urls'
 
-TEMPLATES = []
+TEMPLATES = [
+    {
+        'BACKEND': 'django.template.backends.django.DjangoTemplates',
+        'APP_DIRS': True,
+        'DIRS': [os.path.join(BASE_DIR, 'errors')]
+    }
+]
 
 WSGI_APPLICATION = 'tsa6tk.wsgi.application'
 
