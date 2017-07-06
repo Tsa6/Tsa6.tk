@@ -117,7 +117,6 @@ def addCacheHeaders(resp, hash_int):
     cache.patch_cache_control(resp, stale_if_error=60 * 60 *24, stale_while_revalidate=60*60)
     resp['Content-Language'] = 'en'
     resp['ETag'] = gen_etag(hash_int)
-    resp['TSV'] = 'N'
     return resp
 
 def gen_etag(hash_int):
