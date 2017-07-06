@@ -32,5 +32,5 @@ class Evert(episodeframework.Provider):
         return_arr = [];
         for s in range(len(parsed)):
             for ep in range(len(parsed[s])):
-                return_arr.append(episodeframework.Episode(s + 1, ep + 1, re.search(r'video\/(x[^-_]+)', parsed[s][ep]['dailymotion']).group(1), title=parsed[s][ep]['title']))
+                return_arr.append(episodeframework.Episode(s + 1, ep + 1, re.search(r'video\/([^-_]+)', parsed[s][ep]['dailymotion']).group(1), title=parsed[s][ep]['title']))
         return return_arr;
