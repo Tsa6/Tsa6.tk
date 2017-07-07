@@ -44,7 +44,6 @@ class TestViews(unittest.TestCase):
 #                self.assertEqual(table_view.get_soup().prettify(),BeautifulSoup(target_result,'lxml').prettify())
     
     def test_epjs_view_json(self):
-        self.maxDiff = None
         epjs_view = EpisodesJsView(self.epserve)
         with responses.RequestsMock() as rm:
             rm.add(responses.GET, 'https://api.dailymotion.com/videos?fields=id&ids=epid0x0,epid0x1,epid0x2,epid0x3,epid1x0,epid1x1,epid1x2&limit=100&page=1',json=TestViews.js_response,match_querystring=True)
@@ -81,3 +80,37 @@ class TestViews(unittest.TestCase):
                     },
                 ],
             ])
+    
+    def test_epjs_view_json_fills_gaps(self):
+        mock_es = mock.MagicMock(
+            providers=[
+                mock.MagicMock()
+            ],
+            cache= mock.MagicMock(hash=1337)
+        )
+        mock_es.providers[0].name = 'Mock-Provider'
+        mock_es.get_data.return_value = episodeframework.EpisodeServer.Response(mock_es, [[
+            episodeframework.Episode(1,1,'id1',status=1,title='Scootaloo'),
+            episodeframework.Episode(1,3,'id2',status=1,title='BestPony')
+        ]])
+        epjs_view = EpisodesJsView(mock_es)
+        self.assertEqual(epjs_view.get_json(), [
+            [
+                    {
+                      "title": "Scootaloo",
+                      "dailymotion": "//www.dailymotion.com/video/id1",
+                      "available": True
+                    },
+                    {
+                      "title": mock.ANY,
+                      "dailymotion": mock.ANY,
+                      "available": False
+                    },
+                    {
+                      "title": "BestPony",
+                      "dailymotion": "//www.dailymotion.com/video/id2",
+                      "available": True
+                    },
+            ]
+        ])
+        

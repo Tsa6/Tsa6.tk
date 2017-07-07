@@ -77,23 +77,24 @@ class EpisodesJsView(views.View):
     
     def get_json(self):
         output = []
-        [
-            (
+        for episode in sorted(self.episode_server.get_data().episodes):
+            while len(output) < episode.season:
                 output.append([])
-                if len(output) < episode.season
-                else None
-            )
-            or output[episode.season-1].append({
+            while len(output[episode.season - 1]) < episode.episode - 1:
+                output[episode.season - 1].append({
+                    'title': 'Unknown Title',
+                    'dailymotion': '//www.dailymotion.com/video/NotAvailable',
+                    'available': False
+                })
+            output[episode.season - 1].append({
                 'title':episode.title,
                 'dailymotion':'//www.dailymotion.com/video/%s'%(
                     list(episode.providers.values())[0]
                     if len(episode.providers)
-                    else 'NotAvailable'),
+                    else 'NotAvailable'
+                ),
                 'available':len(episode.providers) > 0
             })
-            for episode
-            in sorted(self.episode_server.get_data().episodes)
-        ]
         return output
         
     def get(self, req):
