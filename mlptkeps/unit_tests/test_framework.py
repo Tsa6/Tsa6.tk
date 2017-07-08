@@ -13,6 +13,11 @@ class TestFramework(unittest.TestCase):
     def test_episode_to_string(self):
         self.assertEqual(Episode(2,3,'x123456',title='Example Title').__str__(), 's2ep3 - \'Example Title\'')
     
+    def test_episode_reject_non_alphanumeric_ids(self):
+        bad_hombres = '<>&"/\''
+        for char in bad_hombres:
+            self.assertRaises(ValueError,Episode,1,1,char)
+    
     def test_proc_batch(self):
         with responses.RequestsMock() as rm:
             rm.add(responses.GET,'https://api.dailymotion.com/videos?fields=id&ids=x123456,xabcdef&limit=100&page=1',json={

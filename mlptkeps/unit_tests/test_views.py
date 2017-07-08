@@ -43,6 +43,21 @@ class TestViews(unittest.TestCase):
 #            with open('mlptkeps/unit_tests/table_response_result.html','r') as target_result:
 #                self.assertEqual(table_view.get_soup().prettify(),BeautifulSoup(target_result,'lxml').prettify())
     
+    def test_table_view_sanitary(self):
+        mock_es = mock.MagicMock(
+            providers=[
+                mock.MagicMock()
+            ],
+            cache= mock.MagicMock(hash=1337)
+        )
+        mock_es.providers[0].name = '<script>'
+        mock_es.get_data.return_value = episodeframework.EpisodeServer.Response(mock_es, [[
+            episodeframework.Episode(1,1,'id1',status=1,title='<script>')
+        ]])
+        epjs_view = EpisodesJsView(mock_es)
+        for element in mock_es.get_soup().find_all(True):
+            self.assertNotRegex(element.string, r'[<>]')
+    
     def test_epjs_view_json(self):
         epjs_view = EpisodesJsView(self.epserve)
         with responses.RequestsMock() as rm:
@@ -111,6 +126,28 @@ class TestViews(unittest.TestCase):
                       "dailymotion": "//www.dailymotion.com/video/id2",
                       "available": True
                     },
+            ]
+        ])
+    
+    def test_epjs_view_json_sanitary(self):
+        mock_es = mock.MagicMock(
+            providers=[
+                mock.MagicMock()
+            ],
+            cache= mock.MagicMock(hash=1337)
+        )
+        mock_es.providers[0].name = 'Mock-Provider'
+        mock_es.get_data.return_value = episodeframework.EpisodeServer.Response(mock_es, [[
+            episodeframework.Episode(1,1,'id1',status=1,title='<script>Lots of bad hacky stuff</script>')
+        ]])
+        epjs_view = EpisodesJsView(mock_es)
+        self.assertEqual(epjs_view.get_json(), [
+            [
+                    {
+                      "title": "&lt;script&gt;Lots of bad hacky stuff&lt;&#x2F;script&gt;",
+                      "dailymotion": "//www.dailymotion.com/video/id1",
+                      "available": True
+                    }
             ]
         ])
         

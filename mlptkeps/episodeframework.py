@@ -5,6 +5,8 @@ import threading
 class Episode():
     
     def __init__(self, season, episode, dailymotion_id, status=-1, title=None):
+        if any([char in str(dailymotion_id) for char in '<>&"/\'']):
+            raise ValueError('Illegal character in dailymotion_id [%s]'%dailymotion_id)
         self.season = season
         self.episode = episode
         self.dailymotion_id = dailymotion_id

@@ -4,6 +4,7 @@ from django import views
 from bs4 import BeautifulSoup
 import re
 import json
+from mlptkeps import util
 
 #Should be defined with episode_server property filled with an episodeframework.EpisodeServer
 class TableView(views.View):
@@ -19,7 +20,7 @@ class TableView(views.View):
             soup = BeautifulSoup(base_page,'lxml')
         for provider in data.providers:
             th = soup.new_tag('th')
-            th.string = provider
+            th.string = util.html_sanitize(provider)
             soup.thead.tr.append(th)
         for ep in data.episodes:
             row = soup.new_tag('tr')
@@ -30,7 +31,7 @@ class TableView(views.View):
             row.append(ep_data)
             
             ep_title = soup.new_tag('td')
-            ep_title.string = ep.title
+            ep_title.string = util.html_sanitize(ep.title)
             ep_title['class'] = 'title'
             row.append(ep_title)
             
@@ -87,7 +88,7 @@ class EpisodesJsView(views.View):
                     'available': False
                 })
             output[episode.season - 1].append({
-                'title':episode.title,
+                'title':util.sanitize_html(episode.title),
                 'dailymotion':'//www.dailymotion.com/video/%s'%(
                     list(episode.providers.values())[0]
                     if len(episode.providers)
