@@ -20,7 +20,7 @@ class TableView(views.View):
             soup = BeautifulSoup(base_page,'lxml')
         for provider in data.providers:
             th = soup.new_tag('th')
-            th.string = util.html_sanitize(provider)
+            th.string = util.sanitize_html(provider)
             soup.thead.tr.append(th)
         for ep in data.episodes:
             row = soup.new_tag('tr')
@@ -31,7 +31,7 @@ class TableView(views.View):
             row.append(ep_data)
             
             ep_title = soup.new_tag('td')
-            ep_title.string = util.html_sanitize(ep.title)
+            ep_title.string = util.sanitize_html(ep.title)
             ep_title['class'] = 'title'
             row.append(ep_title)
             
