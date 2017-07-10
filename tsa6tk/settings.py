@@ -25,8 +25,17 @@ SECRET_KEY = os.environ.get('SECRET_KEY') or 'Make sure to set SECRET_KEY enviro
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
-ALLOWED_HOSTS = ['localhost','.herokuapp.com','.tsa6.tk']
+if 'EMAIL_HOST' in os.environ:
+    EMAIL_SUBJECT_PREFIX = '[tsa6.tk] '
+    EMAIL_USE_TLS = bool(os.environ['EMAIL_USE_TLS'])
+    EMAIL_HOST = os.environ['EMAIL_HOST']
+    EMAIL_PORT = int(os.environ['EMAIL_PORT'])
+    EMAIL_HOST_PASSWORD = os.environ['EMAIL_HOST_PASSWORD']
+    EMAIL_HOST_USER = os.environ['EMAIL_HOST_USER']
+    DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
+    ADMINS = list(zip(os.environ['ADMIN_NAMES'].split(','),os.environ['ADMIN_EMAILS'].split(',')))
 
+ALLOWED_HOSTS = ['localhost','.herokuapp.com','.tsa6.tk']
 
 # Application definition
 
