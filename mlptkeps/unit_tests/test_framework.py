@@ -1,5 +1,7 @@
 import responses
 import unittest
+import time
+import threading
 from unittest import mock
 from mlptkeps.episodeframework import *
 
@@ -205,6 +207,71 @@ class TestFramework(unittest.TestCase):
             (1,3,[1,2])
         ])
         
+    def test_episode_server_get_data_requires_lock(self):
+        es = EpisodeServer([MockProvider('DP')])
+        es.lock.acquire()
+        t = threading.Thread(target=es.get_data)
+        t.start()
+        t.join(timeout=.5)
+        self.assertTrue(t.is_alive())
+        es.lock.release()
+        t.join()
+        self.assertFalse(t.is_alive())
+        
+    def test_episode_server_update_cache(self):
+        es = EpisodeServer([
+            MockProvider('MP1', episode_layout=[(1,1),(1,2)], provider_id='a'),
+            MockProvider('MP2', episode_layout=[(1,2),(1,3)], provider_id='b')
+        ])
+        es.update_cache_async()
+        es.pool.close()
+        es.pool.join()
+        self.assertCountEqual(es.cache.as_json(), {
+            'time': mock.ANY,
+            'providers': ['MP1','MP2'],
+            'episodes': [
+                {
+                    'season': 1,
+                    'episode': 1,
+                    'title': 's1ep01',
+                    'providers': {
+                        0: 'a-0',
+                    }
+                },
+                {
+                    'season': 1,
+                    'episode': 2,
+                    'title': 's1ep02',
+                    'providers': {
+                        0: 'a-1',
+                        1: 'b-0'
+                    }
+                },
+                {
+                    'season': 1,
+                    'episode': 3,
+                    'title': 's1ep03',
+                    'providers': {
+                        1: 'b-1'
+                    }
+                }
+            ]
+        })
+        
+    def test_episode_server_update_cache_async_blocks(self):
+        es = EpisodeServer([DelayingProvider('DP')])
+        self.assertFalse(es.lock.locked())
+        es.update_cache_async()
+        self.assertTrue(es.lock.locked())
+        
+    def test_episode_server_update_cache_async_unblocks(self):
+        es = EpisodeServer([MockProvider('MP')])
+        self.assertFalse(es.lock.locked())
+        es.update_cache_async()
+        es.pool.close()
+        es.pool.join()
+        self.assertFalse(es.lock.locked())
+        
     def test_episode_server_get_data_handles_subproviders(self):
         superprov = MockSuperProvider(['Sub-Prov#1','Sub-Prov#2'],[[(1,1,'a'),(1,2,'b')],[(1,2,'c'),(2,1,'d')]])
         superprov.name = ['Sub-Prov#1','Sub-Prov#2']
@@ -297,6 +364,14 @@ class MockProvider:
                 )
             )
         ]
+        
+class DelayingProvider:
+    # episode_layout format is an array of episodes where each episode is a tuple of season and episodes#
+    def __init__(self, name):
+        self.name = name
+    
+    def get_batch(self):
+        time.sleep(60)
     
 class MockSuperProvider(MockProvider):
     def get_batch(self):
