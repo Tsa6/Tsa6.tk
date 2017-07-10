@@ -20,7 +20,7 @@ class TableView(views.View):
             soup = BeautifulSoup(base_page,'lxml')
         for provider in data.providers:
             th = soup.new_tag('th')
-            th.string = util.sanitize_html(provider)
+            th.string = provider
             soup.thead.tr.append(th)
         for ep in data.episodes:
             row = soup.new_tag('tr')
@@ -31,7 +31,7 @@ class TableView(views.View):
             row.append(ep_data)
             
             ep_title = soup.new_tag('td')
-            ep_title.string = util.sanitize_html(ep.title)
+            ep_title.string = ep.title
             ep_title['class'] = 'title'
             row.append(ep_title)
             
@@ -88,7 +88,7 @@ class EpisodesJsView(views.View):
                     'available': False
                 })
             output[episode.season - 1].append({
-                'title':util.sanitize_html(episode.title),
+                'title':episode.title,
                 'dailymotion':'//www.dailymotion.com/video/%s'%(
                     list(episode.providers.values())[0]
                     if len(episode.providers)
