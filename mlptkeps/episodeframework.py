@@ -107,12 +107,11 @@ class EpisodeServer:
         self.providers = providers
         self.refresh_rate = caching_refresh_rate_minutes
         self.cache = None
-        self.cache_hash = None
         self.timer = None
         self.pool = multiprocessing.Pool(pool_size)
         self.lock = threading.Lock()
         if caching_refresh_rate_minutes:
-            self.get_data()
+            self.update_cache_async()
         
     def reset_timer(self):
         assert self.refresh_rate == 0 or self.refresh_rate >= 1
@@ -127,16 +126,37 @@ class EpisodeServer:
         with self.lock:
             if force_refresh or not (self.refresh_rate and self.cache):
                 self.reset_timer()
-                episodes = self.pool.map(operator.methodcaller('get_batch'), self.providers)
-                i = 0
-                while i < len(episodes):
-                    if len(episodes[i]) > 0 and type(episodes[i][0]) is list:
-                        [episodes.insert(i, ep) for ep in reversed(episodes.pop(i))]
-                        i -= 1
-                    i += 1
-                proc_batch([ep for row in episodes for ep in row])
-                self.cache = EpisodeServer.Response(self, episodes)
+                episodes2D = self.pool.imap(operator.methodcaller('get_batch'), self.providers)
+                self.cache = EpisodeServer.Response(self, EpisodeServer._raw_prov_result_to_ready_for_result(episodes2D))
             return self.cache
+        
+    def _raw_prov_result_to_ready_for_result(episodes2D):
+        episodes = []
+        for lmnt in episodes2D:
+            if len(lmnt) > 0 and type(lmnt[0]) is list:
+                episodes += lmnt
+            else:
+                episodes.append(lmnt)
+        proc_batch([ep for row in episodes for ep in row])
+        return episodes
+    
+    def _sync_process_provs_static(provs):
+        episodes2D = map(operator.methodcaller('get_batch'), provs)
+        return EpisodeServer._raw_prov_result_to_ready_for_result(episodes2D)
+    
+    def update_cache_async(self):
+        class CacheSetter:
+            def __init__(self, eps):
+                self.eps = eps
+            def __call__(self, value):
+                self.eps.cache = EpisodeServer.Response(self.eps, value)
+                self.eps.lock.release()
+        def raiseit(ex):
+            raise ex
+        self.lock.acquire()
+        self.pool.apply_async(EpisodeServer._sync_process_provs_static, [self.providers], callback=CacheSetter(self), error_callback=raiseit)
+        self.reset_timer()
+            
         
     
 def proc_batch(episodes):

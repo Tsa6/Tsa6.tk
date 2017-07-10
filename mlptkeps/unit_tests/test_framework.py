@@ -254,13 +254,20 @@ class TestFramework(unittest.TestCase):
     
     def test_episode_server_updates_cache_when_started_with_timer(self):
         es = EpisodeServer([MockProvider('MP', episode_layout=[(1,1)], episode_status=1)], caching_refresh_rate_minutes=1)
-        self.assertIsNotNone(es.cache)
-    
-    def test_episode_server_starts_timer_when_given_refresh_rate(self):
-        with mock.patch('threading.Timer') as timer:
-            EpisodeServer([], caching_refresh_rate_minutes=1)
-            timer.assert_called_once()
-            self.assertTrue(timer.return_value.daemon)
+        es.pool.close()
+        es.pool.join()
+        self.assertEqual(es.cache.as_json(), {
+            'providers': ['MP'],
+            'time': mock.ANY,
+            'episodes': [
+                {
+                    'season': 1,
+                    'episode': 1,
+                    'title': 's1ep01',
+                    'providers': {0:'a-0'}
+                }
+            ]
+        })
     
     def test_episode_server_hash(self):
         es = EpisodeServer(MockProvider('MP', episode_layout=[(1,1),(1,2),(1,3)], episode_status=1))
