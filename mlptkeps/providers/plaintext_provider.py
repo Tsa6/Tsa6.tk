@@ -25,11 +25,20 @@ class PlaintextProvider(episodeframework.Provider):
         return self.parse_function(self.get_text_function())
     
     def for_url(url, name='Plaintext', parse_function=parse_text):
-        return PlaintextProvider(lambda: requests.get(url).text, name=name, parse_function=parse_function)
+        return PlaintextProvider(URLReader(url), name=name, parse_function=parse_function)
     
     def for_file(filename, name='Plaintext', parse_function=parse_text):
-        def open_file(name):
-            with open(name) as file:
-                return file.read(-1)
-        return PlaintextProvider(lambda: open_file(filename), name=name, parse_function=parse_function)
-    
+        return PlaintextProvider(FileReader(filename), name=name, parse_function=parse_function)
+
+class URLReader():
+    def __init__(self,url):
+        self.url = url
+    def __call__(self):
+        return requests.get(self.url).text
+
+class FilerReader():
+    def __init__(self,name):
+        self.name = name
+    def __call__(self):
+        with open(self.name) as file:
+            return file.read(-1)
