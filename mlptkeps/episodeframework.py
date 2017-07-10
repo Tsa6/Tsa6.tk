@@ -2,6 +2,9 @@ from abc import *
 import requests
 import time
 import threading
+import multiprocessing
+import operator
+
 class Episode():
     
     def __init__(self, season, episode, dailymotion_id, status=-1, title=None):
@@ -100,12 +103,14 @@ class EpisodeServer:
         def as_json(self):
             return {'providers': self.providers, 'time':self.time, 'episodes':[{'season': ep.season, 'episode':ep.episode, 'title': ep.title, 'providers': ep.providers} for ep in self.episodes]}
     
-    def __init__(self, providers, caching_refresh_rate_minutes=0):
+    def __init__(self, providers, caching_refresh_rate_minutes=0, pool_size=3):
         self.providers = providers
         self.refresh_rate = caching_refresh_rate_minutes
         self.cache = None
         self.cache_hash = None
         self.timer = None
+        self.pool = multiprocessing.Pool(pool_size)
+        self.lock = threading.Lock()
         if caching_refresh_rate_minutes:
             self.get_data()
         
@@ -119,18 +124,19 @@ class EpisodeServer:
             self.timer.start()
     
     def get_data(self, force_refresh = False):
-        if force_refresh or not (self.refresh_rate and self.cache):
-            self.reset_timer()
-            episodes = [prov.get_batch() for prov in self.providers]
-            i = 0
-            while i < len(episodes):
-                if len(episodes[i]) > 0 and type(episodes[i][0]) is list:
-                    [episodes.insert(i, ep) for ep in reversed(episodes.pop(i))]
-                    i -= 1
-                i += 1
-            proc_batch([ep for row in episodes for ep in row])
-            self.cache = EpisodeServer.Response(self, episodes)
-        return self.cache
+        with self.lock:
+            if force_refresh or not (self.refresh_rate and self.cache):
+                self.reset_timer()
+                episodes = self.pool.map(operator.methodcaller('get_batch'), self.providers)
+                i = 0
+                while i < len(episodes):
+                    if len(episodes[i]) > 0 and type(episodes[i][0]) is list:
+                        [episodes.insert(i, ep) for ep in reversed(episodes.pop(i))]
+                        i -= 1
+                    i += 1
+                proc_batch([ep for row in episodes for ep in row])
+                self.cache = EpisodeServer.Response(self, episodes)
+            return self.cache
         
     
 def proc_batch(episodes):

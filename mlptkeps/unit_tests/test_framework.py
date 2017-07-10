@@ -191,13 +191,22 @@ class TestFramework(unittest.TestCase):
             ]
         })
         
-    def test_episode_server_get_data_calls_all_get_batch_once(self):
-        mock_get_batchs = [mock.MagicMock(return_value=[mock.MagicMock(season=i, episode=j, title='s%dep%d'%(i,j), status=1, dailymotion_id='%d_%d'%(i,j)) for j in range (0,3)]) for i in range(0,3)]
-        EpisodeServer([prov or prov.configure_mock(name='ProviderName') for prov in [mock.MagicMock(get_batch=gb) for gb in mock_get_batchs]]).get_data()
-        [mgb.assert_called_once() for mgb in mock_get_batchs]
+    def test_episode_server_get_data(self):
+        episode_layout = [
+            [(1,1),(1,2)],
+            [(1,2),(1,3)],
+            [(1,1),(1,3)]
+        ]
+        providers = [MockProvider('Provider %d'%i, episode_layout=episode_layout[i], provider_id='abc'[i], episode_status=1) for i in range(3)]
+        resp = EpisodeServer(providers).get_data()
+        self.assertListEqual([(ep.season, ep.episode, list(ep.providers.keys())) for ep in resp.episodes], [
+            (1,1,[0,2]),
+            (1,2,[0,1]),
+            (1,3,[1,2])
+        ])
         
     def test_episode_server_get_data_handles_subproviders(self):
-        superprov = mock.MagicMock(get_batch=mock.MagicMock(return_value=[[Episode(1,1,'a'),Episode(1,2,'b')],[Episode(1,2,'c'),Episode(2,1,'d')]]))
+        superprov = MockSuperProvider(['Sub-Prov#1','Sub-Prov#2'],[[(1,1,'a'),(1,2,'b')],[(1,2,'c'),(2,1,'d')]])
         superprov.name = ['Sub-Prov#1','Sub-Prov#2']
         with responses.RequestsMock() as rm:
             rm.add(responses.GET, 'https://api.dailymotion.com/videos?fields=id&ids=a,b,c,d&limit=100&page=1',json={
@@ -258,16 +267,32 @@ class TestFramework(unittest.TestCase):
         self.assertEqual(hash(es), hash(es))
         
 class MockProvider:
+    # episode_layout format is an array of episodes where each episode is a tuple of season and episodes#
     def __init__(self, name, episode_layout=[], provider_id='a', episode_status=-1):
         self.name = name
         self.episode_layout = episode_layout
         self.provider_id = provider_id
-        self.calls = 0
         self.episode_status = episode_status
     
     def get_batch(self):
-        self.calls += 1
-        return [Episode(t[0], t[1], '%s-%d'%(self.provider_id, self.calls), title='s%dep%02d'%t, status=self.episode_status) for t in self.episode_layout]
-
+        return [
+            Episode(
+                self.episode_layout[i][0],
+                self.episode_layout[i][1],
+                '%s-%d'%(self.provider_id, i),
+                title='s%dep%02d'%self.episode_layout[i],
+                status=self.episode_status
+            )
+            for i
+            in range(
+                len(
+                    self.episode_layout
+                )
+            )
+        ]
+    
+class MockSuperProvider(MockProvider):
+    def get_batch(self):
+        return [[Episode(t[0], t[1], t[2], title='s%dep%02d'%(t[0],t[1]), status=self.episode_status) for t in subprov] for subprov in self.episode_layout]
 if __name__ == '__main__':
     unittest.main()
