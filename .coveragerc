@@ -6,5 +6,6 @@ source = .
 omit =
     manage.py,
     tsa6tk/settings.py,
-    tsa6tk/wsgi.py
+    tsa6tk/wsgi.py,
+    mlptkeps/unit_tests/*
 precision = 1
