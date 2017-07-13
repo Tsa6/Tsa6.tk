@@ -26,16 +26,16 @@ class Episode():
         return '%s (%s)'%(self, self.dailymotion_id)
     
     def __lt__(self, other):
-        return int(self.season) < int(other.season)
+        return int(self) < int(other)
     
     def __gt__(self, other):
-        return int(self.season) > int(other.season)
+        return int(self) > int(other)
     
     def __le__(self, other):
-        return int(self.season) <= int(other.season)
+        return int(self) <= int(other)
     
     def __ge__(self, other):
-        return int(self.season) >= int(other.season)
+        return int(self) >= int(other)
     
     def __ne__(self, other):
         return not(self == other)
