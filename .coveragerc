@@ -1,0 +1,7 @@
+[run]
+note = Should be run with as 'coverage run -m unittest'
+source = .
+
+[report]
+omit = manage.py
+precision = 1
