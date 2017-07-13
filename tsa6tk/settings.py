@@ -20,13 +20,13 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # See https://docs.djangoproject.com/en/1.11/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ.get('SECRET_KEY') or 'Make sure to set SECRET_KEY environment variable for production'
+SECRET_KEY = os.environ.get('SECRET_KEY','Make sure to set SECRET_KEY environment variable for production')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
 if 'EMAIL_HOST' in os.environ:
-    EMAIL_SUBJECT_PREFIX = '[tsa6.tk] '
+    EMAIL_SUBJECT_PREFIX = '[tsa6.net] '
     EMAIL_USE_TLS = bool(os.environ['EMAIL_USE_TLS'])
     EMAIL_HOST = os.environ['EMAIL_HOST']
     EMAIL_PORT = int(os.environ['EMAIL_PORT'])
@@ -35,7 +35,7 @@ if 'EMAIL_HOST' in os.environ:
     DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
     ADMINS = list(zip(os.environ['ADMIN_NAMES'].split(','),os.environ['ADMIN_EMAILS'].split(',')))
 
-ALLOWED_HOSTS = ['localhost','.herokuapp.com','.tsa6.tk']
+ALLOWED_HOSTS = ['localhost','.herokuapp.com','.tsa6.tk','.tsa6.net']
 
 # Application definition
 
