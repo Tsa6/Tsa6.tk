@@ -32,6 +32,7 @@ if 'EMAIL_HOST' in os.environ:
     EMAIL_PORT = int(os.environ['EMAIL_PORT'])
     EMAIL_HOST_PASSWORD = os.environ['EMAIL_HOST_PASSWORD']
     EMAIL_HOST_USER = os.environ['EMAIL_HOST_USER']
+    SERVER_EMAIL = EMAIL_HOST_USER
     DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
     ADMINS = list(zip(os.environ['ADMIN_NAMES'].split(','),os.environ['ADMIN_EMAILS'].split(',')))
 
