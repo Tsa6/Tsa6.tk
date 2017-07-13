@@ -3,5 +3,8 @@ note = Should be run with as 'coverage run -m unittest'
 source = .
 
 [report]
-omit = manage.py
+omit =
+    manage.py,
+    tsa6tk/settings.py,
+    tsa6tk/wsgi.py
 precision = 1
