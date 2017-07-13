@@ -1,7 +1,11 @@
 language: python
 python:
-  - "3.6"
+  - 3.6
 install:
+  - pip install coveralls
   - pip install -r requirements.txt
   - python manage.py collectstatic
-script: "python -munittest"
+script:
+  - coverage run --source=yourpackagename python -munittest
+after_success:
+  - coveralls
