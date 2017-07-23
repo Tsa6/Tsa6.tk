@@ -1,0 +1,38 @@
+<!Doctype HTML>
+<head>
+    <title>AVoid Safari</title>
+    <style>
+        table {
+            table-layout: fixed;
+            width: 100%;
+            text-align: center;
+            font-family: sans-serif;
+        }
+        iframe {
+            display: inline-block !important;
+        }
+    </style>
+</head>
+<body>
+    <table>
+        <thead>
+            <tr>
+                <th>
+                    <h2>Most Recent</h2>
+                </th>
+                <th>
+                    <h2>Longest Today</h2>
+                </th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for pair in comments %}
+            <tr>
+                <td>{{pair.0|safe}}</td>
+                <td>{{pair.1|safe}}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <script async src="https://www.redditstatic.com/comment-embed.js"></script>
+</body>

@@ -52,6 +52,7 @@ ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS','*').split(',')
 
 INSTALLED_APPS = [
     'mlptkeps',
+    'avoidsafari',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -101,10 +102,10 @@ DATABASES = {
         'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
     }
 }
-if 'DB_URL' not in os.environ:
-    warnings.warn('No DB_URL set, defaulting to a local database.  In production, please set a DB_URL using the DATABASE_URL format.')
+if 'DATABASE_URL' not in os.environ:
+    warnings.warn('No DATABASE_URL set, defaulting to a local database.  In production, please set a DATABASE_URL.')
 else:
-    DATABASES['default'] = dj_database_url.parse(os.environ['DB_URL'])
+    DATABASES['default'] = dj_database_url.parse(os.environ['DATABASE_URL'])
 
 # Password validation
 # https://docs.djangoproject.com/en/1.11/ref/settings/#auth-password-validators
