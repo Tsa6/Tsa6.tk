@@ -4,88 +4,9 @@ import time
 import threading
 from unittest import mock
 from mlptkeps.episodeframework import *
+from . import *
 
-class TestFramework(unittest.TestCase):
-    def setUp(self):
-        pass
-    
-    def test_episode_equality(self):
-        self.assertEqual(Episode(2,3,'xwhataniceid',title='This is a demo video',status=1),Episode(2,3,'xwhataniceid',title='This is a demo video'))
-        
-    def test_episode_to_string(self):
-        self.assertEqual(Episode(2,3,'x123456',title='Example Title').__str__(), 's2ep3 - \'Example Title\'')
-    
-    def test_episode_reject_non_alphanumeric_ids(self):
-        bad_hombres = '<>&"/\''
-        for char in bad_hombres:
-            self.assertRaises(ValueError,Episode,1,1,char)
-    
-    def test_proc_batch(self):
-        with responses.RequestsMock() as rm:
-            rm.add(responses.GET,'https://api.dailymotion.com/videos?fields=id&ids=x123456,xabcdef&limit=100&page=1',json={
-                "page":1,
-                "limit":100,
-                "explicit":False,
-                "total":2,
-                "has_more":False,
-                "list":[{"id":"xabcdef"}]
-            }, match_querystring=True)
-            bat = [
-                Episode(1,2,'x123456'),
-                Episode(8,3,'xabcdef')
-            ]
-            proc_batch(bat)
-            self.assertEqual([bat[0].status, bat[1].status], [0,1])
-        
-    def test_proc_batch_multi_page(self):
-        with responses.RequestsMock() as rm:
-            rm.add(responses.GET,'https://api.dailymotion.com/videos?fields=id&ids=x123456,xabcdef,xabddef,xabeef,xabccdef,x12ef,xab44cdef,xabcddef&limit=100&page=1',json={
-                "page":1,
-                "limit":5,
-                "explicit":False,
-                "total":5,
-                "has_more":True,
-                "list":[{"id":"x123456"},{"id":"xabddef"},{"id":"xabeef"},{"id":"xabccdef"},{"id":"x12ef"}]
-            }, match_querystring=True)
-            rm.add(responses.GET,'https://api.dailymotion.com/videos?fields=id&ids=x123456,xabcdef,xabddef,xabeef,xabccdef,x12ef,xab44cdef,xabcddef&limit=100&page=2',json={
-                "page":2,
-                "limit":5,
-                "explicit":False,
-                "total":1,
-                "has_more":False,
-                "list":[{"id":"xabcddef"}]
-            }, match_querystring=True)
-            bat = [
-                Episode(1,2,'x123456'),
-                Episode(8,3,'xabcdef'),
-                Episode(3,3,'xabddef'),
-                Episode(4,3,'xabeef'),
-                Episode(3,3,'xabccdef'),
-                Episode(2,3,'x12ef'),
-                Episode(4,3,'xab44cdef'),
-                Episode(8,3,'xabcddef')
-            ]
-            proc_batch(bat)
-            self.assertEqual([ep.status for ep in bat], [1,0,1,1,1,1,0,1])
-        
-    def test_proc_batch_ignores_already_viewed(self):
-        with responses.RequestsMock() as rm:
-            rm.add(responses.GET,'https://api.dailymotion.com/videos?fields=id&ids=a,b&limit=100&page=1',json={
-                "page":1,
-                "limit":5,
-                "explicit":False,
-                "total":1,
-                "has_more":False,
-                "list":[{"id":"a"}]
-            }, match_querystring=True)
-            bat = [
-                Episode(1,2,'a'),
-                Episode(8,3,'b'),
-                Episode(3,3,'c', status=0),
-                Episode(3,3,'d', status=1)
-            ]
-            proc_batch(bat)
-            self.assertEqual([ep.status for ep in bat], [1,0,0,1])
+class TestEpisodeServer(unittest.TestCase):
     
     def test_episode_server_form_response_names_providers(self):
         names = ['Name#1','Name#2']
@@ -107,6 +28,18 @@ class TestFramework(unittest.TestCase):
         ])
         self.assertEqual(len(resp.episodes), 4)
         self.assertCountEqual([(ep.season, ep.episode, ep.title) for ep in resp.episodes], [(1,1,'s1ep1'),(1,2,'s1ep2'),(2,1,'s2ep1'),(2,2,'s2ep2')])
+        
+    def test_episode_server_response_fills_in_missing_titles(self):
+        names = ['Name#1','Name#1']
+        resp = EpisodeServer.Response(mock.MagicMock(providers=[MockProvider(name) for name in names]), [
+            [
+                Episode(1, 1, '1', status=1),
+            ],
+            [
+                Episode(1, 1, '2', title='Correct title', status=1),
+            ],
+        ])
+        self.assertCountEqual([ep.title for ep in resp.episodes], ['Correct title'])
         
     def test_episode_server_response_lists_providers(self):
         names = ['Name#1','Name#1']
@@ -206,6 +139,21 @@ class TestFramework(unittest.TestCase):
             (1,2,[0,1]),
             (1,3,[1,2])
         ])
+        
+    def test_episode_server_get_data_uses_cache(self):
+        episode_layout = [
+            [(1,1),(1,2)],
+            [(1,2),(1,3)],
+            [(1,1),(1,3)]
+        ]
+        providers = [MockProvider('Provider %d'%i, episode_layout=episode_layout[i], provider_id='abc'[i], episode_status=1) for i in range(3)]
+        es = EpisodeServer(providers)
+        es.refresh_rate = 10;
+        a = es.get_data()
+        for p in providers:
+            p.episode_layout = None
+        
+        self.assertEqual(a, es.get_data())
         
     def test_episode_server_get_data_requires_lock(self):
         es = EpisodeServer([MockProvider('DP')])
@@ -336,45 +284,14 @@ class TestFramework(unittest.TestCase):
             ]
         })
     
-    def test_episode_server_hash(self):
-        es = EpisodeServer(MockProvider('MP', episode_layout=[(1,1),(1,2),(1,3)], episode_status=1))
-        self.assertEqual(hash(es), hash(es))
-        
-class MockProvider:
-    # episode_layout format is an array of episodes where each episode is a tuple of season and episodes#
-    def __init__(self, name, episode_layout=[], provider_id='a', episode_status=-1):
-        self.name = name
-        self.episode_layout = episode_layout
-        self.provider_id = provider_id
-        self.episode_status = episode_status
+    def test_episode_server_response_hash(self):
+        es = EpisodeServer([MockProvider('MP', episode_layout=[(1,1),(1,2),(1,3)], episode_status=1)])
+        r1 = es.get_data()
+        r2 = es.get_data()
+        self.assertEqual(hash(r1), hash(r2))
     
-    def get_batch(self):
-        return [
-            Episode(
-                self.episode_layout[i][0],
-                self.episode_layout[i][1],
-                '%s-%d'%(self.provider_id, i),
-                title='s%dep%02d'%self.episode_layout[i],
-                status=self.episode_status
-            )
-            for i
-            in range(
-                len(
-                    self.episode_layout
-                )
-            )
-        ]
-        
-class DelayingProvider:
-    # episode_layout format is an array of episodes where each episode is a tuple of season and episodes#
-    def __init__(self, name):
-        self.name = name
-    
-    def get_batch(self):
-        time.sleep(60)
-    
-class MockSuperProvider(MockProvider):
-    def get_batch(self):
-        return [[Episode(t[0], t[1], t[2], title='s%dep%02d'%(t[0],t[1]), status=self.episode_status) for t in subprov] for subprov in self.episode_layout]
-if __name__ == '__main__':
-    unittest.main()
+    def test_episode_server_response_equality(self):
+        es = EpisodeServer([MockProvider('MP', episode_layout=[(1,1),(1,2),(1,3)], episode_status=1)])
+        r1 = es.get_data()
+        r2 = es.get_data()
+        self.assertEqual(r1, r2)

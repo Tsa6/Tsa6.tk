@@ -1,11 +1,14 @@
 [run]
 note = Should be run with as 'coverage run -m unittest'
 source = .
+branch = True
+concurrency =
+    thread
 
 [report]
 omit =
-    manage.py,
-    tsa6tk/settings.py,
-    tsa6tk/wsgi.py,
+    manage.py
+    tsa6tk/settings.py
+    tsa6tk/wsgi.py
     mlptkeps/unit_tests/*
 precision = 1

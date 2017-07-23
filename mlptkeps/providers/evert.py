@@ -14,7 +14,7 @@ class Evert(episodeframework.Provider):
         json_text = None
         end = False
         parsed = None
-        for line in resp.iter_lines():
+        for line in resp.iter_lines(): # Pragma: No branch
             line = line.decode('utf-8')
             if line.startswith('var episodes = '):
                 line = line.replace('var episodes = ','')

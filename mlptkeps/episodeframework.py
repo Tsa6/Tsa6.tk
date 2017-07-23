@@ -17,7 +17,7 @@ class Episode():
         self.title = title
     
     def __eq__(self, other):
-        return self.season == other.season and self.episode == other.episode and self.dailymotion_id == other.dailymotion_id and self.title == other.title
+        return (self.season, self.episode, self.dailymotion_id, self.title) == (other.season, other.episode, other.dailymotion_id, other.title)
     
     def __str__(self):
         return 's%dep%d - \'%s\''%(self.season, self.episode, self.title)
@@ -47,9 +47,10 @@ class Provider(ABC):
     
     def __init__(self,name): #Name can be either one string, a a list of strings which are the names for sub-providers
         self.name = name
-        
-    @abstractmethod
-    def get_batch(self): #Returns either a list of episodes, or list of lists of episodes, one for each sub-provider
+    
+    # Returns either a list of episodes, or list of lists of episodes, one for each sub-provider
+    @abstractmethod#pragma: no cover
+    def get_batch(self):
         pass
 
 class EpisodeServer:
