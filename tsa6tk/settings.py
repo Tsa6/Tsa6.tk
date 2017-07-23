@@ -10,7 +10,9 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/1.11/ref/settings/
 """
 
+import dj_database_url
 import os
+import warnings
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -20,10 +22,14 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # See https://docs.djangoproject.com/en/1.11/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ.get('SECRET_KEY','Make sure to set SECRET_KEY environment variable for production')
+if 'SECRET_KEY' not in os.environ:
+    warnings.warn('SECRET_KEY environment variable not set, using default.  Make sure to set a secret key for production')
+SECRET_KEY = os.environ.get('SECRET_KEY','h8!+at^)sg&$7-&mk*%x%im(6&%qe_1oxspk8wn*3+*db3gf&0')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = bool(os.environ.get('DEBUG',False))
+if DEBUG:
+    warnings.warn('Running in DEBUG mode.  Make sure to set the DEBUG environment variable to False for production')
 
 if 'EMAIL_HOST' in os.environ:
     EMAIL_SUBJECT_PREFIX = '[tsa6.net] '
@@ -35,13 +41,18 @@ if 'EMAIL_HOST' in os.environ:
     SERVER_EMAIL = EMAIL_HOST_USER
     DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
     ADMINS = list(zip(os.environ['ADMIN_NAMES'].split(','),os.environ['ADMIN_EMAILS'].split(',')))
+else:
+    warnings.warn('Email environment variables not set, remember to check the settings.py file to see how to configure them.')
 
-ALLOWED_HOSTS = ['localhost','.herokuapp.com','.tsa6.tk','.tsa6.net']
+if 'ALLOWED_HOSTS' not in os.environ:
+    warnings.warn('ALLOWED_HOSTS environment variable not set, defaulting to all hosts.  ALLOWED_HOSTS should be a list of hosts as defined by django, seperated ONLY by a comma')
+ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS','*').split(',')
 
 # Application definition
 
 INSTALLED_APPS = [
     'mlptkeps',
+    'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
@@ -65,9 +76,17 @@ ROOT_URLCONF = 'tsa6tk.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
+        'DIRS': [os.path.join(BASE_DIR, 'errors')],
         'APP_DIRS': True,
-        'DIRS': [os.path.join(BASE_DIR, 'errors')]
-    }
+        'OPTIONS': {
+            'context_processors': [
+                'django.template.context_processors.debug',
+                'django.template.context_processors.request',
+                'django.contrib.auth.context_processors.auth',
+                'django.contrib.messages.context_processors.messages',
+            ],
+        },
+    },
 ]
 
 WSGI_APPLICATION = 'tsa6tk.wsgi.application'
@@ -76,8 +95,16 @@ WSGI_APPLICATION = 'tsa6tk.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/1.11/ref/settings/#databases
 
-DATABASES = {}
-
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+    }
+}
+if 'DB_URL' not in os.environ:
+    warnings.warn('No DB_URL set, defaulting to a local database.  In production, please set a DB_URL using the DATABASE_URL format.')
+else:
+    DATABASES['default'] = dj_database_url.parse(os.environ['DB_URL'])
 
 # Password validation
 # https://docs.djangoproject.com/en/1.11/ref/settings/#auth-password-validators
