@@ -1,7 +1,6 @@
 from django.conf.urls import url
 from django.conf.urls import include
 from django.contrib import admin
-from tsa6tk.errors import handle404
 
 urlpatterns = [
     url(r'^admin/', admin.site.urls),
