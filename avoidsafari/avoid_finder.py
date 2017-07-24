@@ -1,6 +1,6 @@
 import praw
+import enchant
 import os
-import multiprocessing
 import warnings
 import re
 
@@ -11,7 +11,7 @@ defaults = {
     'THREAD_POOL_SIZE': 3,
     'REQUIRED_UNIQUE_WORDS': 15
 }
-wordlist = set(map(str.strip,open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'wordlist.txt')).readlines()))
+wordlist = enchant.request_pwl_dict(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'wordlist.txt'))
 
 
 class CommentProcessor:
@@ -32,10 +32,11 @@ class CommentProcessor:
             and len(remove_punctuation(remove_links(comment.body))) >= 5 * self.required_unique_words
             and (self.allow_nsfw or not comment.submission.over_18)
             and not(any([fifth in remove_links(remove_usernames(comment.body)) for fifth in fifths]))
+            and len(set(re.split('\s+',remove_links(comment.body)))) > self.required_unique_words
             and len(
                 set(
                     filter(
-                        lambda word: word in wordlist,
+                        wordlist.check,
                         map(
                             lambda w: re.sub(
                                 '[^a-z\d]',
@@ -84,7 +85,6 @@ def remove_punctuation(comment_body):
 
 
 def get_iterable(client_id, client_secret, thread_pool_size=defaults['THREAD_POOL_SIZE'], required_unique_words=defaults['REQUIRED_UNIQUE_WORDS'], allow_nsfw=False):
-        pool = multiprocessing.Pool(thread_pool_size)
         reddit = praw.Reddit(
             client_id=client_id,
             client_secret=client_secret,
@@ -92,13 +92,12 @@ def get_iterable(client_id, client_secret, thread_pool_size=defaults['THREAD_POO
         )
         return filter(
             bool,
-            pool.imap_unordered(
+            map( #multiprocessing.Pool.imap_unordered can be used here, but uses more ram.  Make sure to set chunk size high if you do.
                 CommentProcessor(
                     required_unique_words,
                     allow_nsfw=allow_nsfw
                 ),
-                reddit.subreddit('all-avoid5').stream.comments(),
-                500
+                reddit.subreddit('all-avoid5').stream.comments()
             )
         )
 

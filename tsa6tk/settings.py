@@ -51,8 +51,8 @@ ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS','*').split(',')
 # Application definition
 
 INSTALLED_APPS = [
-    'mlptkeps',
-    'avoidsafari',
+    'mlptkeps.apps.MlptkepsConfig',
+    'avoidsafari.apps.AvoidsafariConfig',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
