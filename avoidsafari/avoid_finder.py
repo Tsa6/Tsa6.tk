@@ -1,5 +1,4 @@
 import praw
-import enchant
 import os
 import warnings
 import re
@@ -11,7 +10,7 @@ defaults = {
     'THREAD_POOL_SIZE': 3,
     'REQUIRED_UNIQUE_WORDS': 15
 }
-wordlist = enchant.request_pwl_dict(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'wordlist.txt'))
+wordlist = frozenset(map(str.strip, open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'wordlist.txt')).readlines()))
 
 
 class CommentProcessor:
@@ -36,7 +35,7 @@ class CommentProcessor:
             and len(
                 set(
                     filter(
-                        wordlist.check,
+                        wordlist.__contains__,
                         map(
                             lambda w: re.sub(
                                 '[^a-z\d]',

@@ -9,4 +9,3 @@ whitenoise==4.0b1
 dj-database-url==0.4.1
 praw==5.0.1
 psycopg2==2.7.1
-pyenchant==1.6.11
