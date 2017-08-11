@@ -172,8 +172,6 @@ class TestEpisodeServer(unittest.TestCase):
             MockProvider('MP2', episode_layout=[(1,2),(1,3)], provider_id='b')
         ])
         es.update_cache_async()
-        es.pool.close()
-        es.pool.join()
         self.assertCountEqual(es.cache.as_json(), {
             'time': mock.ANY,
             'providers': ['MP1','MP2'],
@@ -205,20 +203,6 @@ class TestEpisodeServer(unittest.TestCase):
                 }
             ]
         })
-        
-    def test_episode_server_update_cache_async_blocks(self):
-        es = EpisodeServer([DelayingProvider('DP')])
-        self.assertFalse(es.lock.locked())
-        es.update_cache_async()
-        self.assertTrue(es.lock.locked())
-        
-    def test_episode_server_update_cache_async_unblocks(self):
-        es = EpisodeServer([MockProvider('MP')])
-        self.assertFalse(es.lock.locked())
-        es.update_cache_async()
-        es.pool.close()
-        es.pool.join()
-        self.assertFalse(es.lock.locked())
         
     def test_episode_server_get_data_handles_subproviders(self):
         superprov = MockSuperProvider(['Sub-Prov#1','Sub-Prov#2'],[[(1,1,'a'),(1,2,'b')],[(1,2,'c'),(2,1,'d')]])
@@ -269,8 +253,6 @@ class TestEpisodeServer(unittest.TestCase):
     
     def test_episode_server_updates_cache_when_started_with_timer(self):
         es = EpisodeServer([MockProvider('MP', episode_layout=[(1,1)], episode_status=1)], caching_refresh_rate_minutes=1)
-        es.pool.close()
-        es.pool.join()
         self.assertEqual(es.cache.as_json(), {
             'providers': ['MP'],
             'time': mock.ANY,
