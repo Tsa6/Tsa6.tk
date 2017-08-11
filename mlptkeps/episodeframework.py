@@ -109,7 +109,7 @@ class EpisodeServer:
         self.refresh_rate = caching_refresh_rate_minutes
         self.cache = None
         self.timer = None
-        self.pool = multiprocessing.Pool(pool_size)
+        self.pool_size = pool_size
         self.lock = threading.Lock()
         if caching_refresh_rate_minutes:
             self.update_cache_async()
@@ -127,7 +127,7 @@ class EpisodeServer:
         with self.lock:
             if force_refresh or not (self.refresh_rate and self.cache):
                 self.reset_timer()
-                episodes2D = self.pool.imap(operator.methodcaller('get_batch'), self.providers)
+                episodes2D = map(operator.methodcaller('get_batch'), self.providers)
                 self.cache = EpisodeServer.Response(self, EpisodeServer._raw_prov_result_to_ready_for_result(episodes2D))
             return self.cache
         
@@ -154,8 +154,7 @@ class EpisodeServer:
                 self.eps.lock.release()
         def raiseit(ex):
             raise ex
-        self.lock.acquire()
-        self.pool.apply_async(EpisodeServer._sync_process_provs_static, [self.providers], callback=CacheSetter(self), error_callback=raiseit)
+        self.cache = EpisodeServer.Response(self, EpisodeServer._sync_process_provs_static(self.providers))
         self.reset_timer()
             
         
