@@ -7,7 +7,7 @@ from mlptkeps.providers import plaintext_provider
 
 epserve = EpisodeServer([
     evert.Evert(),
-    plaintext_provider.PlaintextProvider.for_url('https://pastebin.com/uNU30E7k',name='Manual Listing'),
+    plaintext_provider.PlaintextProvider.for_url('https://pastebin.com/raw/uNU30E7k',name='Manual Listing'),
     dailymotion_channels.DailymotionChannelsProvider.parse_from_file('mlptkeps/dailymotion_providers.txt'),
 ], caching_refresh_rate_minutes=5)
 
