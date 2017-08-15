@@ -18,7 +18,7 @@ def parse_text(text):
         episodeframework.Episode(int(match[1]), int(match[2]), match[3], title=match[4])
         for match
         in [
-            re.match(r'^\s*(\d+) (\d+) (x[a-z\d]+) (.+?)\s*$', line)
+            re.match(r'^\s*(\d+) (\d+) ([a-z\d]+) (.+?)\s*$', line, flags=re.IGNORECASE)
             for line
             in text.splitlines()
             if not re.match(r'\s*(#|$)', line)
