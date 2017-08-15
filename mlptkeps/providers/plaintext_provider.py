@@ -3,6 +3,17 @@ import re
 from mlptkeps import episodeframework
 
 def parse_text(text):
+    # Episode Format:
+    # <Season> <Episode> <DailyMotionID> <Title>
+    #
+    # All values may contain no spaces until <Title>
+    # <Season> and <Episode> must be resolvable integers
+    # All characters may be used, with the exception of the space character ( ),
+    # which may not be used until the <Title> field.
+    # Lines starting with a hash sign (#) are ignored, though hash signs may be used
+    # elsewhere in the line.
+    # Feilds for which the id is set to 'NotAvailable' are assumed not to be
+    # available.  This is usefull for just setting a title.
     return [
         episodeframework.Episode(int(match[1]), int(match[2]), match[3], title=match[4])
         for match
