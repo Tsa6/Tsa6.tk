@@ -205,18 +205,18 @@ class TestEpisodeServer(unittest.TestCase):
         })
         
     def test_episode_server_get_data_handles_subproviders(self):
-        superprov = MockSuperProvider(['Sub-Prov#1','Sub-Prov#2'],[[(1,1,'a'),(1,2,'b')],[(1,2,'c'),(2,1,'d')]])
+        superprov = MockSuperProvider(['Sub-Prov#1','Sub-Prov#2'],[[(1,1,'xa'),(1,2,'xb')],[(1,2,'xc'),(2,1,'xd')]])
         superprov.name = ['Sub-Prov#1','Sub-Prov#2']
         with responses.RequestsMock() as rm:
-            rm.add(responses.GET, 'https://api.dailymotion.com/videos?fields=id&ids=a,b,c,d&limit=100&page=1',json={
+            rm.add(responses.GET, 'https://api.dailymotion.com/videos?fields=id&ids=xa,xb,xc,xd&limit=100&page=1',json={
                 "has_more":False,
-                "list":[{"id":"a"},{"id":"b"},{"id":"c"},{"id":"d"}]
+                "list":[{"id":"xa"},{"id":"xb"},{"id":"xc"},{"id":"xd"}]
             }, match_querystring=True)
             resp = EpisodeServer([superprov]).get_data()
         self.assertCountEqual([(ep.season, ep.episode, ep.providers) for ep in resp.episodes], [
-            (1,1,{0:'a'}),
-            (1,2,{0:'b',1:'c'}),
-            (2,1,{1:'d'}),
+            (1,1,{0:'xa'}),
+            (1,2,{0:'xb',1:'xc'}),
+            (2,1,{1:'xd'}),
         ])
         self.assertCountEqual(resp.providers, superprov.name)
     
@@ -261,7 +261,7 @@ class TestEpisodeServer(unittest.TestCase):
                     'season': 1,
                     'episode': 1,
                     'title': 's1ep01',
-                    'providers': {0:'a-0'}
+                    'providers': {0:'xa-0'}
                 }
             ]
         })

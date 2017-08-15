@@ -54,19 +54,42 @@ class TestProcBatch(unittest.TestCase):
         
     def test_proc_batch_ignores_already_viewed(self):
         with responses.RequestsMock() as rm:
-            rm.add(responses.GET,'https://api.dailymotion.com/videos?fields=id&ids=a,b&limit=100&page=1',json={
+            rm.add(responses.GET,'https://api.dailymotion.com/videos?fields=id&ids=xa,xb&limit=100&page=1',json={
                 "page":1,
                 "limit":5,
                 "explicit":False,
                 "total":1,
                 "has_more":False,
-                "list":[{"id":"a"}]
+                "list":[{"id":"xa"}]
             }, match_querystring=True)
             bat = [
-                Episode(1,2,'a'),
-                Episode(8,3,'b'),
-                Episode(3,3,'c', status=0),
-                Episode(3,3,'d', status=1)
+                Episode(1,2,'xa'),
+                Episode(8,3,'xb'),
+                Episode(3,3,'xc', status=0),
+                Episode(3,3,'xd', status=1)
             ]
             proc_batch(bat)
             self.assertEqual([ep.status for ep in bat], [1,0,0,1])
+    
+    def test_proc_batch_checks_nonxids(self):
+        with responses.RequestsMock() as rm:
+            rm.add(responses.GET,'https://api.dailymotion.com/video/scootaloo', json = {
+                'not-an-error': True
+            })
+            rm.add(responses.GET,'https://api.dailymotion.com/video/badseed', json = {
+                'error': 'what we gonna do?'
+            })
+            bat = [
+                    Episode(1,1,'scootaloo'),
+                    Episode(1,2,'badseed'),
+            ]
+            proc_batch(bat)
+            self.assertEqual([ep.status for ep in bat], [1,0])
+
+    def test_proc_batch_ignore_notavailable(self):
+        with responses.RequestsMock() as rm: #No outward bound connections, ya here?!
+            bat = [
+                Episode(1,3,'NotAvailable')
+            ]
+            proc_batch(bat)
+            self.assertEqual(bat[0].status, 0)

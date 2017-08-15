@@ -161,13 +161,18 @@ class EpisodeServer:
     
 def proc_batch(episodes):
     episodes_filtered = [ep for ep in episodes if ep.status == -1]
+    episodes_xids = list(filter(lambda ep: ep.dailymotion_id.startswith('x'), episodes_filtered))
+    episodes_other = filter(lambda ep: not ep.dailymotion_id.startswith('x') and ep.dailymotion_id.lower() != 'notavailable', episodes_filtered)
     current_page = 0
     more_pages = True
     valid_ids = []
-    while more_pages:
+    while more_pages and len(episodes_xids):
         current_page += 1
-        resp = requests.get('https://api.dailymotion.com/videos?fields=id&ids=%s&limit=100&page=%d'%(','.join(map(lambda ep: ep.dailymotion_id, episodes_filtered)), current_page)).json()
+        resp = requests.get('https://api.dailymotion.com/videos?fields=id&ids=%s&limit=100&page=%d'%(','.join(map(lambda ep: ep.dailymotion_id, episodes_xids)), current_page)).json()
         more_pages = resp['has_more']
         valid_ids += map(lambda res: res['id'], resp['list'])
+    for episode in episodes_other:
+        if not 'error' in requests.get('https://api.dailymotion.com/video/%s'%episode.dailymotion_id).json():
+            valid_ids.append(episode.dailymotion_id)
     for episode in episodes_filtered:
         episode.status = valid_ids.count(episode.dailymotion_id) # Should by either 0 or 1, 0 if episode was not found in search, 1 if it was.  Dailymotion shouldn't list duplicates

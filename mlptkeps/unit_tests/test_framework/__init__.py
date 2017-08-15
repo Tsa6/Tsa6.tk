@@ -15,7 +15,7 @@ class MockProvider:
             Episode(
                 self.episode_layout[i][0],
                 self.episode_layout[i][1],
-                '%s-%d'%(self.provider_id, i),
+                'x%s-%d'%(self.provider_id, i),
                 title='s%dep%02d'%self.episode_layout[i],
                 status=self.episode_status
             )

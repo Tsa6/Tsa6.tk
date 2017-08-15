@@ -26,7 +26,7 @@ class TestViews(unittest.TestCase):
         "explicit":False,
         "total":1,
         "has_more":False,
-        "list":[{"id":"a-1"},{"id":"a-2"},{"id":"b-0"},{"id":"b-1"},{"id":"b-2"}]
+        "list":[{"id":"xa-1"},{"id":"xa-2"},{"id":"xb-0"},{"id":"xb-1"},{"id":"xb-2"}]
     }
     
     def setUp(self):
@@ -71,29 +71,29 @@ class TestViews(unittest.TestCase):
     def test_epjs_view_json(self):
         epjs_view = EpisodesJsView(self.epserve)
         with responses.RequestsMock() as rm:
-            rm.add(responses.GET, 'https://api.dailymotion.com/videos?fields=id&ids=a-0,a-1,a-2,a-3,b-0,b-1,b-2&limit=100&page=1',json=TestViews.js_response,match_querystring=True)
+            rm.add(responses.GET, 'https://api.dailymotion.com/videos?fields=id&ids=xa-0,xa-1,xa-2,xa-3,xb-0,xb-1,xb-2&limit=100&page=1',json=TestViews.js_response,match_querystring=True)
             self.assertEqual(epjs_view.get_json(),[
                 [
                     {
                       "title": "s1ep01",
-                      "dailymotion": "//www.dailymotion.com/video/b-0",
+                      "dailymotion": "//www.dailymotion.com/video/xb-0",
                       "available": True
                     },
                     {
                       "title": "s1ep02",
-                      "dailymotion": "//www.dailymotion.com/video/b-1",
+                      "dailymotion": "//www.dailymotion.com/video/xb-1",
                       "available": True
                     },
                 ],
                 [
                     {
                       "title": "s2ep01",
-                      "dailymotion": "//www.dailymotion.com/video/a-1",
+                      "dailymotion": "//www.dailymotion.com/video/xa-1",
                       "available": True
                     },
                     {
                       "title": "s2ep02",
-                      "dailymotion": "//www.dailymotion.com/video/a-2",
+                      "dailymotion": "//www.dailymotion.com/video/xa-2",
                       "available": True
                     },
                 ],
