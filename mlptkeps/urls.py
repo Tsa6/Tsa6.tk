@@ -6,6 +6,7 @@ from mlptkeps.providers import dailymotion_channels
 from mlptkeps.providers import plaintext_provider
 
 epserve = EpisodeServer([
+    plaintext_provider.PlaintextProvider.for_url('https://pastebin.com/raw/3vVDXMih',name='High Priority Overrides'),
     evert.Evert(),
     plaintext_provider.PlaintextProvider.for_url('https://pastebin.com/raw/uNU30E7k',name='Manual Listing'),
     dailymotion_channels.DailymotionChannelsProvider.parse_from_file('mlptkeps/dailymotion_providers.txt'),
