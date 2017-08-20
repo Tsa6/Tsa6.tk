@@ -31,7 +31,7 @@ class TableView(views.View):
             row.append(ep_data)
             
             ep_title = soup.new_tag('td')
-            ep_title.string = ep.title
+            ep_title.string = ep.title or "Title Not Found"
             ep_title['class'] = 'title'
             row.append(ep_title)
             

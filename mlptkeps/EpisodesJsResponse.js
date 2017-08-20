@@ -43,8 +43,9 @@ missingFrame.class = "video";
 innerCont = document.body.getElementsByClassName("inner-cont")[0];
 innerCont.insertBefore(missingFrame, innerCont.getElementsByClassName("controls")[0]);
 function openEpisode(viddata) {
+	epTitle=document.querySelector('[data-episode-number="' + viddata.episode + '"][data-episode-season="' + viddata.season + '"]').attributes['data-episode'].value || viddata.title
 	dmVideo = document.getElementById("DMVideo");
-	$('.episodetitle').text(viddata.title);
+	$('.episodetitle').text(epTitle);
 	if (episodes[viddata.season - 1][viddata.episode - 1].available) {
 		dmVideo.style.display = "inline";
 		missingFrame.style.display = "none";
