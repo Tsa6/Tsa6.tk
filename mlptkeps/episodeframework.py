@@ -79,12 +79,12 @@ class EpisodeServer:
                         episodes[epstr] = {
                             's':ep.season,
                             'ep':ep.episode,
-                            'title':ep.title,
+                            'title':ep.title or 'Title not found',
                             'provs':{}
                         }
                     if ep.status == 1:
                         episodes[epstr]['provs'][i] = ep.dailymotion_id
-                    if episodes[epstr]['title'] == None and ep.title:
+                    if episodes[epstr]['title'] == 'Title not found' and ep.title:
                         episodes[epstr]['title'] = ep.title
             self.episodes = [EpisodeServer.Response.MultiSourceEpisode(o) for o in episodes.values()]
             self.hash = hash(self)
