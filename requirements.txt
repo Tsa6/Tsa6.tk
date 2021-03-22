@@ -6,7 +6,7 @@ cookies==2.2.1
 Django==1.11.3
 gunicorn==19.7.1
 idna==2.5
-lxml==3.8.0
+lxml==4.6.3
 pytz==2017.2
 requests==2.18.1
 responses==0.5.1
